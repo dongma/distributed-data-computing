@@ -1,4 +1,4 @@
-package hadoop.apache.org.mr;
+package hadoop.apache.bean;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -2,9 +2,10 @@ package hadoop.apache.org.mr
 
 import java.util
 
+import hadoop.apache.bean.{FlowBean, ReduceData}
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.io.{IntWritable, LongWritable, Text}
-import org.apache.hadoop.mapred.{FileInputFormat, FileOutputFormat, JobClient, JobConf, MapReduceBase, Mapper, OutputCollector, Reducer, Reporter, TextInputFormat, TextOutputFormat}
+import org.apache.hadoop.io.Text
+import org.apache.hadoop.mapred._
 import org.slf4j.{Logger, LoggerFactory}
 
 /**
@@ -16,20 +17,33 @@ object AnalysisPhoneFlow {
 
   private[this] val logger: Logger = LoggerFactory.getLogger(this.getClass)
 
-  class MapStage extends MapReduceBase with Mapper[LongWritable, Text, Text, IntWritable] {
+  class MapStage extends MapReduceBase with Mapper[Text, Text, Text, FlowBean] {
+    private val phoneKey = new Text()
 
-    override def map(k1: LongWritable, v1: Text, outputCollector: OutputCollector[Text, IntWritable],
+    /** map stage用于读取一行数据，切分字段；并以手机号为key, bean对象为value进行输出 */
+    override def map(key: Text, value: Text, output: OutputCollector[Text, FlowBean],
                      reporter: Reporter): Unit = {
-
+      val line: String = value.toString
+      val items: Array[String] = line.split("\t")
+      logger.info("using tab character to split string, phone: {}, upflow: {}, downflow: {}",
+        items(1), items(7), items(8))
+      key.set(items(1))
+      val flowBean: FlowBean = new FlowBean(items(7).toLong, items(8).toLong)
+      output.collect(phoneKey, flowBean)
     }
 
   }
 
-  class ReduceStage extends MapReduceBase with Reducer[Text, IntWritable, Text, IntWritable] {
+  /** reduce stage用于对同一个手机号，统计其上行流量总和、下行流量总和 */
+  class ReduceStage extends MapReduceBase with Reducer[Text, FlowBean, ReduceData, Text] {
 
-    override def reduce(k2: Text, iterator: util.Iterator[IntWritable],
-                        outputCollector: OutputCollector[Text, IntWritable], reporter: Reporter): Unit = {
-
+    override def reduce(key: Text, values: util.Iterator[FlowBean],
+                        output: OutputCollector[ReduceData, Text], reporter: Reporter): Unit = {
+      import scala.collection.JavaConversions._
+      val upFlowSum = values.toList.reduce((valueOne, valueTwo) => valueOne.getUpFlow + valueTwo.getUpFlow)
+      val downFlowSum = values.toList.reduce((valueOne, valueTwo) => valueOne.getDownFlow + valueTwo.getDownFlow)
+      /* ReduceData实现了WritableComparable接口（按totalUsed进行排序），value数据设置为空 */
+      output.collect(new ReduceData(upFlowSum, downFlowSum), new Text())
     }
 
   }
@@ -42,12 +56,15 @@ object AnalysisPhoneFlow {
 
     val jobConf: JobConf = new JobConf(this.getClass)
     jobConf.setJobName("analysis phone flow Job")
-    jobConf.setOutputKeyClass(classOf[Text])
-    jobConf.setOutputValueClass(classOf[IntWritable])
+    // 设置reduce阶段输出的数据类型，key为ReduceData类型，value为Text类型
+    jobConf.setOutputKeyClass(classOf[ReduceData])
+    jobConf.setOutputValueClass(classOf[Text])
+
+    // MapStage执行map阶段工作，ReduceStage对分组后的数据进行聚合
     jobConf.setMapperClass(classOf[MapStage])
     jobConf.setReducerClass(classOf[ReduceStage])
     jobConf.setInputFormat(classOf[TextInputFormat])
-    jobConf.setOutputFormat(classOf[TextOutputFormat[Text, IntWritable]])
+    jobConf.setOutputFormat(classOf[TextOutputFormat[ReduceData, Text]])
 
     FileInputFormat.setInputPaths(jobConf, new Path(args(0)))
     FileOutputFormat.setOutputPath(jobConf, new Path(args(1)))

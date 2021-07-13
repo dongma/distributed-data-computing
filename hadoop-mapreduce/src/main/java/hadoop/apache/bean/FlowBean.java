@@ -1,7 +1,5 @@
 package hadoop.apache.bean;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.apache.hadoop.io.Writable;
 
 import java.io.DataInput;
@@ -13,8 +11,6 @@ import java.io.IOException;
  * @date 2021/07/12
  * 表示HTTP_20130313143750.dat文件中的一行记录
  */
-@Getter
-@Setter
 public class FlowBean implements Writable {
 
     /**
@@ -61,8 +57,33 @@ public class FlowBean implements Writable {
         this.sumFlow = dataInput.readLong();
     }
 
+    public long getUpFlow() {
+        return upFlow;
+    }
+
+    public void setUpFlow(long upFlow) {
+        this.upFlow = upFlow;
+    }
+
+    public long getDownFlow() {
+        return downFlow;
+    }
+
+    public void setDownFlow(long downFlow) {
+        this.downFlow = downFlow;
+    }
+
+    public long getSumFlow() {
+        return sumFlow;
+    }
+
+    public void setSumFlow(long sumFlow) {
+        this.sumFlow = sumFlow;
+    }
+
     @Override
     public String toString() {
         return upFlow + "\t" + downFlow + "\t" + sumFlow;
     }
+
 }

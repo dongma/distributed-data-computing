@@ -39,9 +39,12 @@ object AnalysisPhoneFlow {
 
     override def reduce(key: Text, values: util.Iterator[FlowBean],
                         output: OutputCollector[ReduceData, Text], reporter: Reporter): Unit = {
-      import scala.collection.JavaConversions._
-      val upFlowSum = values.toList.reduce((valueOne, valueTwo) => valueOne.getUpFlow + valueTwo.getUpFlow)
-      val downFlowSum = values.toList.reduce((valueOne, valueTwo) => valueOne.getDownFlow + valueTwo.getDownFlow)
+      var downFlowSum, upFlowSum = 0L
+      while (values.hasNext) {
+        val flowBean: FlowBean = values.next()
+        upFlowSum = flowBean.getUpFlow + upFlowSum
+        downFlowSum = flowBean.getDownFlow + downFlowSum
+      }
       /* ReduceData实现了WritableComparable接口（按totalUsed进行排序），value数据设置为空 */
       output.collect(new ReduceData(upFlowSum, downFlowSum), new Text())
     }

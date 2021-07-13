@@ -16,7 +16,6 @@
         <hadoop.version>2.6.0</hadoop.version>
         <maven.scala.plugin.version>2.15.2</maven.scala.plugin.version>
         <scala.version>2.11.12</scala.version>
-        <lombok.version>1.16.22</lombok.version>
         <slf4j.version>1.7.21</slf4j.version>
     </properties>
 
@@ -38,11 +37,6 @@
             <artifactId>hadoop-client</artifactId>
             <version>${hadoop.version}</version>
             <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>${lombok.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
@@ -81,6 +75,30 @@
                 <configuration>
                     <sourceDir>src/main/scala</sourceDir>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <archive>
+                        <manifest>
+                            <mainClass>hadoop.apache.org.mr.AnalysisPhoneFlow</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-hadoop-mapreduce-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

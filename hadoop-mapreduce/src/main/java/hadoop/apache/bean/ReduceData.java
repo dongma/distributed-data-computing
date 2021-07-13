@@ -1,7 +1,5 @@
 package hadoop.apache.bean;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.apache.hadoop.io.WritableComparable;
 
 import java.io.DataInput;
@@ -13,8 +11,6 @@ import java.io.IOException;
  * @date 2021/07/13
  * 定义reduce最终输出的数据格式: phone手机号，上行流量总和，下行流量总和，总流量
  */
-@Getter
-@Setter
 public class ReduceData implements WritableComparable {
 
     /**
@@ -83,6 +79,38 @@ public class ReduceData implements WritableComparable {
         this.upFlowSum = input.readLong();
         this.downFlowSum = input.readLong();
         this.totalUsed = input.readLong();
+    }
+
+    public String getPhoneNum() {
+        return phoneNum;
+    }
+
+    public void setPhoneNum(String phoneNum) {
+        this.phoneNum = phoneNum;
+    }
+
+    public long getUpFlowSum() {
+        return upFlowSum;
+    }
+
+    public void setUpFlowSum(long upFlowSum) {
+        this.upFlowSum = upFlowSum;
+    }
+
+    public long getDownFlowSum() {
+        return downFlowSum;
+    }
+
+    public void setDownFlowSum(long downFlowSum) {
+        this.downFlowSum = downFlowSum;
+    }
+
+    public long getTotalUsed() {
+        return totalUsed;
+    }
+
+    public void setTotalUsed(long totalUsed) {
+        this.totalUsed = totalUsed;
     }
 
     @Override

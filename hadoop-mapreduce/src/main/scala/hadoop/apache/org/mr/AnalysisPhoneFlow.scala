@@ -2,11 +2,11 @@ package hadoop.apache.org.mr
 
 import java.util
 
+import com.typesafe.scalalogging.Logger
 import hadoop.apache.bean.{FlowBean, ReduceData}
 import org.apache.hadoop.fs.Path
 import org.apache.hadoop.io.Text
 import org.apache.hadoop.mapred._
-import org.slf4j.{Logger, LoggerFactory}
 
 /**
  * @author Sam Ma
@@ -15,7 +15,7 @@ import org.slf4j.{Logger, LoggerFactory}
  */
 object AnalysisPhoneFlow {
 
-  private[this] val logger: Logger = LoggerFactory.getLogger(this.getClass)
+  private[this] val logger = Logger(AnalysisPhoneFlow.getClass)
 
   class MapStage extends MapReduceBase with Mapper[Text, Text, Text, FlowBean] {
     private val phoneKey = new Text()
@@ -53,7 +53,7 @@ object AnalysisPhoneFlow {
 
   def main(args: Array[String]): Unit = {
     if (args.length < 2) {
-      logger.warn("AnalysisPhoneFlow <input-path> <output-path>")
+      logger.warn("Invalid command args, please input <input-path> <output-path>")
       System.exit(1)
     }
 

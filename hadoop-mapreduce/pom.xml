@@ -16,7 +16,6 @@
         <hadoop.version>2.6.0</hadoop.version>
         <maven.scala.plugin.version>2.15.2</maven.scala.plugin.version>
         <scala.version>2.11.12</scala.version>
-        <slf4j.version>1.7.21</slf4j.version>
     </properties>
 
     <dependencies>
@@ -39,14 +38,14 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>com.typesafe.scala-logging</groupId>
+            <artifactId>scala-logging_2.11</artifactId>
+            <version>3.5.0</version>
         </dependency>
         <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-            <version>${slf4j.version}</version>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.2.3</version>
         </dependency>
         <dependency>
             <groupId>org.scala-lang</groupId>

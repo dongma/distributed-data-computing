@@ -11,7 +11,7 @@ import java.io.IOException;
  * @date 2021/07/13
  * 定义reduce最终输出的数据格式: phone手机号，上行流量总和，下行流量总和，总流量
  */
-public class ReduceData implements WritableComparable {
+public class ReduceData implements WritableComparable<ReduceData> {
 
     /**
      * 统计的手机号码
@@ -36,10 +36,11 @@ public class ReduceData implements WritableComparable {
     public ReduceData() {
     }
 
-    public ReduceData(Long upFlowSum, Long downFlowSum) {
+    public ReduceData(String phone, Long upFlowSum, Long downFlowSum) {
+        this.phoneNum = phone;
         this.upFlowSum = upFlowSum;
         this.downFlowSum = downFlowSum;
-        this.totalUsed = upFlowSum + downFlowSum;
+        this.totalUsed = this.upFlowSum + this.downFlowSum;
     }
 
     public void set(long upFlowSum, long downFlowSum) {
@@ -49,8 +50,8 @@ public class ReduceData implements WritableComparable {
     }
 
     @Override
-    public int compareTo(Object other) {
-        return (int) (this.totalUsed - ((ReduceData) other).totalUsed);
+    public int compareTo(ReduceData other) {
+        return this.totalUsed > other.getTotalUsed() ? -1 : 1;
     }
 
     /**

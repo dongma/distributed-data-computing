@@ -5,7 +5,7 @@ import java.util
 import com.typesafe.scalalogging.Logger
 import hadoop.apache.bean.{FlowBean, ReduceData}
 import org.apache.hadoop.fs.Path
-import org.apache.hadoop.io.Text
+import org.apache.hadoop.io.{LongWritable, Text}
 import org.apache.hadoop.mapred._
 
 /**
@@ -17,18 +17,18 @@ object AnalysisPhoneFlow {
 
   private[this] val logger = Logger(AnalysisPhoneFlow.getClass)
 
-  class MapStage extends MapReduceBase with Mapper[Text, Text, Text, FlowBean] {
+  class MapStage extends MapReduceBase with Mapper[LongWritable, Text, Text, FlowBean] {
     private val phoneKey = new Text()
 
     /** map stage用于读取一行数据，切分字段；并以手机号为key, bean对象为value进行输出 */
-    override def map(key: Text, value: Text, output: OutputCollector[Text, FlowBean],
+    override def map(key: LongWritable, value: Text, output: OutputCollector[Text, FlowBean],
                      reporter: Reporter): Unit = {
       val line: String = value.toString
       val items: Array[String] = line.split("\t")
-      logger.info("using tab character to split string, phone: {}, upflow: {}, downflow: {}",
-        items(1), items(7), items(8))
-      key.set(items(1))
-      val flowBean: FlowBean = new FlowBean(items(7).toLong, items(8).toLong)
+      /*logger.info("using tab character to split string, phone: {}, upflow: {}, downflow: {}",
+        items(1), items(7), items(8))*/
+      phoneKey.set(items(1))
+      val flowBean: FlowBean = new FlowBean(items(8).toLong, items(9).toLong)
       output.collect(phoneKey, flowBean)
     }
 
@@ -37,7 +37,7 @@ object AnalysisPhoneFlow {
   /** reduce stage用于对同一个手机号，统计其上行流量总和、下行流量总和 */
   class ReduceStage extends MapReduceBase with Reducer[Text, FlowBean, ReduceData, Text] {
 
-    override def reduce(key: Text, values: util.Iterator[FlowBean],
+    override def reduce(phoneNum: Text, values: util.Iterator[FlowBean],
                         output: OutputCollector[ReduceData, Text], reporter: Reporter): Unit = {
       var downFlowSum, upFlowSum = 0L
       while (values.hasNext) {
@@ -46,7 +46,7 @@ object AnalysisPhoneFlow {
         downFlowSum = flowBean.getDownFlow + downFlowSum
       }
       /* ReduceData实现了WritableComparable接口（按totalUsed进行排序），value数据设置为空 */
-      output.collect(new ReduceData(upFlowSum, downFlowSum), new Text())
+      output.collect(new ReduceData(phoneNum.toString, upFlowSum, downFlowSum), new Text())
     }
 
   }
@@ -59,6 +59,10 @@ object AnalysisPhoneFlow {
 
     val jobConf: JobConf = new JobConf(this.getClass)
     jobConf.setJobName("analysis phone flow Job")
+    // 设置map阶段输出Key的Class类型，Value类型
+    jobConf.setMapOutputKeyClass(classOf[Text])
+    jobConf.setMapOutputValueClass(classOf[FlowBean])
+
     // 设置reduce阶段输出的数据类型，key为ReduceData类型，value为Text类型
     jobConf.setOutputKeyClass(classOf[ReduceData])
     jobConf.setOutputValueClass(classOf[Text])

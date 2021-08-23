@@ -8,6 +8,7 @@
     <version>1.0.0</version>
     <modules>
         <module>hadoop-mapreduce</module>
+        <module>databricks-app</module>
     </modules>
 
     <name>data-computing</name>

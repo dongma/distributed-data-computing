@@ -2,6 +2,7 @@ package org.apache.databricks
 
 import com.typesafe.scalalogging.Logger
 import org.apache.commons.configuration.{PropertiesConfiguration => HierConf}
+import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkConf, SparkContext}
 
 /**
@@ -28,16 +29,20 @@ object InvertedIndex {
 
     val cfg = new HierConf(args(0))
     val inputFile = cfg.getString("inputfile")
-    sparkContext.textFile(inputFile).map(line => line.split("\t"))
+    val wordAggregate: RDD[(String, Map[String, Int])] = sparkContext.textFile(inputFile).map(line => line.split("\t"))
       .map(phases => (phases(0), phases(1)))
-      // 将(fname, "it is what it is")元组map为 [("it", fname), ("is", fname), ("what", fname), ("is", fname)]
-      .map(tuple => tuple._2.split(" ").map(word => (word, tuple._1)))
-      // 将RDD[Array[(String, String)]]通过flatmap拍平为RDD[("it", fname)]
+      // 将(fname, "it is what it is")元组映射为[("it", (fname->1)), ("is", (fname->1)), ("what", (fname->1)), ("is", (fname->1))]
+      .map(tuple => tuple._2.split(" ").map(word => (word, Map(tuple._1 -> 1))))
+      // RDD[Array[(String, String)]]用flatmap拍平为RDD[("it", (fname->1))]
       .flatMap(element => element)
-      //
-      .reduceByKey((fname, file) => {
-
+      // 针对相同reduce key，若在map中存在相同key，则累加key对应的value值
+      .reduceByKey((map1, map2) => {
+        val mergeMap = map1 ++ map2.map {
+          case(k, v) => k -> (map1.getOrElse(k, 0) + map2.getOrElse(k, 0))
+        }
+        mergeMap
       })
+    logger.info("use rdd api to aggregate words, result: {}", wordAggregate)
     sparkContext.stop()
   }
 

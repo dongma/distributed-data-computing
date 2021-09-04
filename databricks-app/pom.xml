@@ -10,9 +10,9 @@
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.scala.plugin.version>2.15.2</maven.scala.plugin.version>
-        <scala.version>2.11.12</scala.version>
-        <spark.version>2.4.5</spark.version>
-        <scala.compat.version>2.11</scala.compat.version>
+        <scala.version>2.12.14</scala.version>
+        <spark.version>3.1.2</spark.version>
+        <scala.compat.version>2.12</scala.compat.version>
     </properties>
 
     <dependencies>
@@ -36,17 +36,6 @@
             <artifactId>scala-logging_${scala.compat.version}</artifactId>
             <version>3.7.2</version>
         </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.3</version>
-        </dependency>
-        <!-- https://mvnrepository.com/artifact/commons-configuration/commons-configuration -->
-        <dependency>
-            <groupId>commons-configuration</groupId>
-            <artifactId>commons-configuration</artifactId>
-            <version>1.9</version>
-        </dependency>
     </dependencies>
 
     <build>
@@ -68,6 +57,30 @@
                         <arg>-target:jvm-1.8</arg>
                     </args>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                    <archive>
+                        <manifest>
+                            <mainClass>org.apache.databricks.InvertedIndex</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>databricks-app</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

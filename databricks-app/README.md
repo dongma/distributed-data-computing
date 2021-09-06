@@ -69,27 +69,27 @@ spark-sql> select name, price from (select price, id, name from order where pric
 
 ```shell
 === Applying Rule org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints ===
- Project [name#11, price#12]                                                                                                                                  Project [name#11, price#12]
-!+- Filter ((price#12 > 50.0) AND (price#12 < 70.0))                                                                                                          +- Filter (isnotnull(price#12) AND ((price#12 > 50.0) AND (price#12 < 70.0)))
-    +- HiveTableRelation [`default`.`order`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, Data Cols: [id#10, name#11, price#12], Partition Cols: []]      +- HiveTableRelation [`default`.`order`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, Data Cols: [id#10, name#11, price#12], Partition Cols: []]
+ Project [name#11, price#12]                                                                                
+!+- Filter ((price#12 > 50.0) AND (price#12 < 70.0))                                                                                                        
+    +- HiveTableRelation [`default`.`order`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, Data Cols: [id#10, name#11, price#12], Partition Cols: []]
 ```
 
 而`CollapseProject`的优化规则指，当自查询`project`的字段与外部`select`有相同字段时，会基于`CollapseProject`规则优化：
 
 ```shell
 === Applying Rule org.apache.spark.sql.catalyst.optimizer.CollapseProject ===
- Project [name#11, price#12]                                                                                                                                     Project [name#11, price#12]
-!+- Project [price#12, name#11]                                                                                                                                  +- Filter ((price#12 > cast(50 as float)) AND ((price#12 < cast(70 as float)) AND (2 > 1)))
-!   +- Filter ((price#12 > cast(50 as float)) AND ((price#12 < cast(70 as float)) AND (2 > 1)))                                                                     +- HiveTableRelation [`default`.`order`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, Data Cols: [id#10, name#11, price#12], Partition Cols: []]
-!      +- HiveTableRelation [`default`.`order`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, Data Cols: [id#10, name#11, price#12], Partition Cols: []] 
+ Project [name#11, price#12]                                                                
+!+- Project [price#12, name#11]                                                                                                                                  
+!  +- Filter ((price#12 > cast(50 as float)) AND ((price#12 < cast(70 as float)) AND (2 > 1)))
+    +- HiveTableRelation [`default`.`order`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, Data Cols: [id#10, name#11, price#12], Partition Cols: []]
 ```
 
 `BooleanSimplification`则会将`where`条件中的`2 > 1`转换为`true`：
 
 ```shell
 === Applying Rule org.apache.spark.sql.catalyst.optimizer.BooleanSimplification ===
- Project [name#11, price#12]                                                                                                                                  Project [name#11, price#12]
-!+- Filter ((price#12 > 50.0) AND ((price#12 < 70.0) AND true))                                                                                               +- Filter ((price#12 > 50.0) AND (price#12 < 70.0))
+ Project [name#11, price#12]                                                                       
+!+- Filter ((price#12 > 50.0) AND ((price#12 < 70.0) AND true))
 ```
 
 2）构建一条SQL，同时apply下面五条优化规则：ConstantFolding、PushDownPredicates、ReplaceDistinctWithAggregate、ReplaceExceptWithAntiJoin、FoldablePropagation。为应用相关优化规则，又创建了两张表`refund`退款表和测试表`test`：
@@ -112,32 +112,34 @@ select pname name, 1.0 price from test order by price, name;
 ```shell
 21/09/07 01:32:26 WARN PlanChangeLogger: 
 === Applying Rule org.apache.spark.sql.catalyst.optimizer.ConstantFolding ===
- Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true                                                                                                                     Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true
- +- Aggregate [name#13, price#21], [name#13, price#21]                                                                                                                              +- Aggregate [name#13, price#21], [name#13, price#21]
-    +- Union false, false       
+Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true
++- Aggregate [name#13, price#21], [name#13, price#21]                                                                                                            
+   +- Union false, false       
 
-=== Applying Rule org.apache.spark.sql.catalyst.optimizer.PushDownPredicates ===
- Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true                                                                                                                           Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true
- +- Aggregate [name#13, price#21], [name#13, price#21]                                                                                                                                    +- Aggregate [name#13, price#21], [name#13, price#21]
-    +- Union false, false                                                                                                                                                                    +- Union false, false
-       :- Project [name#13, cast(price#14 as double) AS price#21]     
+=== Applying Rule org.apache.spark.sql.catalyst.optimizer.PushDownPredicates === 
+Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true  
++- Aggregate [name#13, price#21], [name#13, price#21]
+   +- Union false, false                                                                                                                                 
+      :- Project [name#13, cast(price#14 as double) AS price#21]     
 
-=== Applying Rule org.apache.spark.sql.catalyst.optimizer.ReplaceDistinctWithAggregate ===
- Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true                                                                                                                           Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true
-!+- Distinct                                                                                                                                                                              +- Aggregate [name#13, price#21], [name#13, price#21]
-    +- Union false, false                                                                                                                                                                    +- Union false, false
-       :- Project [name#13, cast(price#14 as double) AS price#21]                                                                                                                               :- Project [name#13, cast(price#14 as double) AS price#21]
-!      :  +- Distinct                             
+=== Applying Rule org.apache.spark.sql.catalyst.optimizer.ReplaceDistinctWithAggregate ===    
+Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true
+!+- Distinct         
++- Aggregate [name#13, price#21], [name#13, price#21]
+   +- Union false, false                                     
+      :- Project [name#13, cast(price#14 as double) AS price#21]        
+         :  +- Distinct                             
 
-=== Applying Rule org.apache.spark.sql.catalyst.optimizer.ReplaceExceptWithAntiJoin ===
- Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true                                                                                                                        Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true
- +- Distinct                                                                                                                                                                           +- Distinct
-    +- Union false, false                                                                                                                                                                 +- Union false, false
-       :- Project [name#13, cast(price#14 as double) AS price#21]                                                                                                                            :- Project [name#13, cast(price#14 as double) AS price#21]
-       
+=== Applying Rule org.apache.spark.sql.catalyst.optimizer.ReplaceExceptWithAntiJoin ===  
+Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true  
++- Distinct
+   +- Union false, false   
+      :- Project [name#13, cast(price#14 as double) AS price#21]                                                                                                                 
+
 === Applying Rule org.apache.spark.sql.catalyst.optimizer.FoldablePropagation ===
-!Sort [price#26 ASC NULLS FIRST, name#25 ASC NULLS FIRST], true                                                                                                  Sort [1.0 ASC NULLS FIRST, name#25 ASC NULLS FIRST], true
- +- Project [pname#28 AS name#25, 1.0 AS price#26]                                                                                                               +- Project [pname#28 AS name#25, 1.0 AS price#26]
-    +- HiveTableRelation [`default`.`test`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, Data Cols: [id#27, pname#28, vipprice#29], Partition Cols: []]      +- HiveTableRelation [`default`.`test`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, Data Cols: [id#27, pname#28, vipprice#29], Partition Cols: []]      
+!Sort [price#26 ASC NULLS FIRST, name#25 ASC NULLS FIRST], true  
++- Project [pname#28 AS name#25, 1.0 AS price#26]  
+   +- HiveTableRelation [`default`.`test`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, 
+     Data Cols: [id#27, pname#28, vipprice#29], Partition Cols: []]
 ```
 

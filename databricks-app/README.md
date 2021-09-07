@@ -61,7 +61,8 @@ apache-spark-2.4.5 % JAVA_VERSION=1.8 SPARK_VERSION=2.4.5 spark-sql -S
 在`spark-sql`中创建一张`order`表：`create table order(id int, name varchar(50), price float)`，构建的`SQL`语句如下
 
 ```sql
-spark-sql> select name, price from (select price, id, name from order where price > 50) a 
+spark-sql> select name, price
+  from (select price, id, name from order where price > 50) a
 	where a.price < 70 and 2 > 1;
 ```
 
@@ -69,8 +70,8 @@ spark-sql> select name, price from (select price, id, name from order where pric
 
 ```shell
 === Applying Rule org.apache.spark.sql.catalyst.optimizer.InferFiltersFromConstraints ===
- Project [name#11, price#12]                                                                                
-!+- Filter ((price#12 > 50.0) AND (price#12 < 70.0))                                                                                                        
+ Project [name#11, price#12]
+!+- Filter ((price#12 > 50.0) AND (price#12 < 70.0))
     +- HiveTableRelation [`default`.`order`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, Data Cols: [id#10, name#11, price#12], Partition Cols: []]
 ```
 
@@ -78,8 +79,8 @@ spark-sql> select name, price from (select price, id, name from order where pric
 
 ```shell
 === Applying Rule org.apache.spark.sql.catalyst.optimizer.CollapseProject ===
- Project [name#11, price#12]                                                                
-!+- Project [price#12, name#11]                                                                                                                                  
+ Project [name#11, price#12]
+!+- Project [price#12, name#11]
 !  +- Filter ((price#12 > cast(50 as float)) AND ((price#12 < cast(70 as float)) AND (2 > 1)))
     +- HiveTableRelation [`default`.`order`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, Data Cols: [id#10, name#11, price#12], Partition Cols: []]
 ```
@@ -88,7 +89,7 @@ spark-sql> select name, price from (select price, id, name from order where pric
 
 ```shell
 === Applying Rule org.apache.spark.sql.catalyst.optimizer.BooleanSimplification ===
- Project [name#11, price#12]                                                                       
+ Project [name#11, price#12]
 !+- Filter ((price#12 > 50.0) AND ((price#12 < 70.0) AND true))
 ```
 
@@ -102,44 +103,44 @@ create table test(id int, pname varchar(50), viprice float);
 在`sql-catalyst`模块的`Optimizer`类中，对一些优化规则都有演示，如`ReplaceDistinctWithAggregate`、`ReplaceExceptWithAntiJoin`和`FoldablePropagation`，应用5条优化规的`SQL`语句为：
 
 ```sql
-select distinct name, price from (select name, price from order except select name, price from refund where price > 30) where price < 50
+select distinct name, price from 
+(select name, price from order except select name, price from refund where price > 30) where price < 50
 union
-select pname name, 1.0 price from test order by price, name; 
+select pname name, 1.0 price from test order by price, name;
 ```
 
 具体应用优化规则`log`如下：
 
 ```shell
-21/09/07 01:32:26 WARN PlanChangeLogger: 
+21/09/07 01:32:26 WARN PlanChangeLogger:
 === Applying Rule org.apache.spark.sql.catalyst.optimizer.ConstantFolding ===
 Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true
-+- Aggregate [name#13, price#21], [name#13, price#21]                                                                                                            
-   +- Union false, false       
-
-=== Applying Rule org.apache.spark.sql.catalyst.optimizer.PushDownPredicates === 
-Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true  
 +- Aggregate [name#13, price#21], [name#13, price#21]
-   +- Union false, false                                                                                                                                 
-      :- Project [name#13, cast(price#14 as double) AS price#21]     
+   +- Union false, false
 
-=== Applying Rule org.apache.spark.sql.catalyst.optimizer.ReplaceDistinctWithAggregate ===    
+=== Applying Rule org.apache.spark.sql.catalyst.optimizer.PushDownPredicates ===
 Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true
-!+- Distinct         
 +- Aggregate [name#13, price#21], [name#13, price#21]
-   +- Union false, false                                     
-      :- Project [name#13, cast(price#14 as double) AS price#21]        
-         :  +- Distinct                             
+   +- Union false, false
+      :- Project [name#13, cast(price#14 as double) AS price#21]
 
-=== Applying Rule org.apache.spark.sql.catalyst.optimizer.ReplaceExceptWithAntiJoin ===  
-Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true  
+=== Applying Rule org.apache.spark.sql.catalyst.optimizer.ReplaceDistinctWithAggregate ===
+Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true
+!+- Distinct
++- Aggregate [name#13, price#21], [name#13, price#21]
+   +- Union false, false
+      :- Project [name#13, cast(price#14 as double) AS price#21]
+         :  +- Distinct
+
+=== Applying Rule org.apache.spark.sql.catalyst.optimizer.ReplaceExceptWithAntiJoin ===
+Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true
 +- Distinct
-   +- Union false, false   
-      :- Project [name#13, cast(price#14 as double) AS price#21]                                                                                                                 
+   +- Union false, false
+      :- Project [name#13, cast(price#14 as double) AS price#21]
 
 === Applying Rule org.apache.spark.sql.catalyst.optimizer.FoldablePropagation ===
-!Sort [price#26 ASC NULLS FIRST, name#25 ASC NULLS FIRST], true  
-+- Project [pname#28 AS name#25, 1.0 AS price#26]  
+!Sort [price#26 ASC NULLS FIRST, name#25 ASC NULLS FIRST], true
++- Project [pname#28 AS name#25, 1.0 AS price#26]
    +- HiveTableRelation [`default`.`test`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, 
-     Data Cols: [id#27, pname#28, vipprice#29], Partition Cols: []]
+      Data Cols: [id#27, pname#28, vipprice#29], Partition Cols: []]              
 ```
-

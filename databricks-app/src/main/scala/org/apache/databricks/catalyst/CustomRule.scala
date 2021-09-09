@@ -3,7 +3,7 @@ package org.apache.databricks.catalyst
 import com.typesafe.scalalogging.Logger
 import org.apache.databricks.InvertedIndex
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Distinct, LogicalPlan}
 import org.apache.spark.sql.catalyst.rules.Rule
 
 /**
@@ -15,9 +15,11 @@ case class CustomRule(spark: SparkSession) extends Rule[LogicalPlan] {
 
   private[this] val logger = Logger(InvertedIndex.getClass)
 
-  override def apply(plan: LogicalPlan): LogicalPlan = {
-    logger.info("apply CustomRule rule to optimize spark sql")
-    plan
+  def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+    case Distinct(child) => {
+      logger.info("apply CustomReplaceDistinctRule to optimize spark sql")
+      Aggregate(child.output, child.output, child)
+    }
   }
 
 }

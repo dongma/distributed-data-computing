@@ -103,7 +103,7 @@ create table test(id int, pname varchar(50), viprice float);
 在`sql-catalyst`模块的`Optimizer`类中，对一些优化规则都有演示，如`ReplaceDistinctWithAggregate`、`ReplaceExceptWithAntiJoin`和`FoldablePropagation`，应用5条优化规的`SQL`语句为：
 
 ```sql
-select distinct name, price from 
+select distinct name, price from
 (select name, price from order except select name, price from refund where price > 30) where price < 50
 union
 select pname name, 1.0 price from test order by price, name;
@@ -141,6 +141,58 @@ Sort [price#21 ASC NULLS FIRST, name#13 ASC NULLS FIRST], true
 === Applying Rule org.apache.spark.sql.catalyst.optimizer.FoldablePropagation ===
 !Sort [price#26 ASC NULLS FIRST, name#25 ASC NULLS FIRST], true
 +- Project [pname#28 AS name#25, 1.0 AS price#26]
-   +- HiveTableRelation [`default`.`test`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe, 
-      Data Cols: [id#27, pname#28, vipprice#29], Partition Cols: []]              
+   +- HiveTableRelation [`default`.`test`, org.apache.hadoop.hive.serde2.lazy.LazySimpleSerDe,
+      Data Cols: [id#27, pname#28, vipprice#29], Partition Cols: []]
 ```
+
+### 3. 实现自定义优化规则
+第一步，实现自定义规则(静默规则，通过set spark.sql.planChangeLog.level=WARN;确认执行到就行)；
+```scala
+case class CustomRule(spark: SparkSession) extends Rule[LogicalPlan] {
+
+  private[this] val logger = Logger(InvertedIndex.getClass)
+
+  /*
+   * apply CustomReplaceDistinctRule to optimize spark sql
+  21/09/15 22:59:10 WARN PlanChangeLogger:
+  === Result of Batch Operator Optimization before Inferring Filters ===
+   */
+  def apply(plan: LogicalPlan): LogicalPlan = plan transform {
+    /*case Distinct(child) => {
+      logger.info("apply CustomReplaceDistinctRule to optimize spark sql")
+      Aggregate(child.output, child.output, child)
+    }*/
+    case _ => println("apply CustomReplaceDistinctRule to optimize spark sql")
+      plan
+  }
+
+}
+```
+第二步，创建自己的Extension并注入`extensions`：
+```scala
+class CustomSessionExtension extends (SparkSessionExtensions => Unit) {
+
+  override def apply(extensions: SparkSessionExtensions): Unit = {
+    extensions.injectOptimizerRule {
+      session => CustomRule(session)
+    }
+  }
+
+}
+```
+第三步，启动`Spark SQL`注入生成的`jar`包，由于自定义的`Rule`是匹配所有规则（`case _ =>`），因而执行任务`SQL`语句都会进行规则优化：
+```shell
+madong@spotify-mac spark-3.1.2-bin-without-hadoop % ./bin/spark-sql --jars examples/databricks-app-1.0.0-jar-with-dependencies.jar --conf spark.sql.extensions=org.apache.databricks.catalyst.CustomSessionExtension
+21/09/15 22:58:13 WARN Utils: Set SPARK_LOCAL_IP if you need to bind to another address
+21/09/15 22:58:15 WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
+Using Spark's default log4j profile: org/apache/spark/log4j-defaults.properties
+Setting default log level to "WARN".
+spark-sql>
+         >
+         > select * from order;
+21/09/15 22:59:10 WARN PlanChangeLogger: Batch Substitution has no effect.
+>> apply CustomReplaceDistinctRule to optimize spark sql
+21/09/15 22:59:10 WARN PlanChangeLogger:
+=== Result of Batch Operator Optimization before Inferring Filters ===
+```
+第三题总结下：之前做作业时，一直使用`logger`打印自定义的输出日志，但是试了很多种方式都没有打印出来。今天看了一位同学的作业，输出用的是`println()`方法，自己用`println`再执行了下`sql`语句，确实输出来了自定义的日志，多看看别人代码也挺好的。

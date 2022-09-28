@@ -16,6 +16,7 @@
         <hadoop.version>2.10.1</hadoop.version>
         <maven.scala.plugin.version>2.15.2</maven.scala.plugin.version>
         <scala.version>2.12.14</scala.version>
+        <hive.runtime.version>2.3.8</hive.runtime.version>
     </properties>
 
     <dependencies>
@@ -65,6 +66,11 @@
             <groupId>org.scala-lang</groupId>
             <artifactId>scala-compiler</artifactId>
             <version>${scala.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-exec</artifactId>
+            <version>${hive.runtime.version}</version>
         </dependency>
     </dependencies>
 

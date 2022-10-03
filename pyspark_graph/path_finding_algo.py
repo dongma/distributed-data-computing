@@ -1,7 +1,8 @@
 # -*- coding:utf-8 -*-
 from pyspark.sql.types import *
-from graphframes import *
 from pyspark.sql import SparkSession
+
+from graphframes import GraphFrame
 
 
 def create_transport_graph(spark: SparkSession) -> GraphFrame:
@@ -12,10 +13,10 @@ def create_transport_graph(spark: SparkSession) -> GraphFrame:
         StructField("longitude", FloatType(), True),
         StructField("population", IntegerType(), True)
     ]
-    nodes = spark.read.csv("../dataset/transport-nodes.csv", header=True,
+    nodes = spark.read.csv("dataset/transport-nodes.csv", header=True,
                            schema=StructType(node_fields))
     # 读取加载交通关系relationships.csv内容，并构成graphframe
-    rels = spark.read.csv("../dataset/transport-relationships.csv", header=True)
+    rels = spark.read.csv("dataset/transport-relationships.csv", header=True)
     reversed_rels = (rels.withColumn("newSrc", rels.dst).withColumn("newDst", rels.src) \
                      .drop("dst", "src").withColumnRenamed("newSrc", "src") \
                      .withColumnRenamed("newDst", "dst") \
@@ -27,7 +28,7 @@ def create_transport_graph(spark: SparkSession) -> GraphFrame:
 
 def getSparkContext() -> SparkSession:
     builder = SparkSession.builder.appName("pandas-on-spark")\
-        .master("local")
+        .master("local[*]")
     builder = builder.config("spark.sql.execution.arrow.pyspark.enabled", "true")
     # Pandas API on Spark automatically uses this Spark session with the configurations set.
     return builder.getOrCreate()

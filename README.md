@@ -12,4 +12,4 @@
 > docker run -d --name neo4j_db -p 7474:7474 -p 7687:7687 -v /tmp/neo4j/data:/data -v /tmp/neo4j/logs:/logs -v /tmp/neo4j/conf:/var/lib/neo4j/conf -v /tmp/neo4j/import:/var/lib/neo4j/import -v /tmp/neo4j/plugins:/plugins --env NEO4J_AUTH=neo4j/password neo4j
 ```
 图计算平台使用`apache-spark 3.0`，使用`pyspark`并基于`graphframe-0.8`组件进行图计算。基础数据点、边表基于`csv`文件，放在代码仓库`dataset`的文件夹下，基础数据导入`Neo4j`后，数据展示如下：
-<img src="dataset/doc_reference/neo4j_transport_data.jpg" alt="neo4j_transport_data" style="zoom:50%;" />
+<img src="dataset/doc_reference/neo4j_transport_data.jpg" alt="neo4j_transport_data" width="75%" align=center />

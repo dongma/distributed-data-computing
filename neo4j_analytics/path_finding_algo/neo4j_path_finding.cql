@@ -61,3 +61,10 @@ return algo.getNodeById(nodeId).id as place, cost
 -- "Colchester"	347.0
 -- "London"	453.0
 
+-- #4. 使用Neo4j实现A*算法，查找Den Haag和London之间的最短路径
+match (source:Place {id: "Den Haag"}), (destination:Place {id: "London"})
+-- astar.stream#参数，"distance"为边的名称，"latitude"，"longitude"为经纬度节点性质，地理空间启发结算中使用
+call algo.shortestPath.astar.stream(source, destination, "distance",
+"latitude", "longitude")
+yield nodeId, cost
+return algo.getNodeById(nodeId).id as place, cost

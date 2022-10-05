@@ -68,3 +68,12 @@ call algo.shortestPath.astar.stream(source, destination, "distance",
 "latitude", "longitude")
 yield nodeId, cost
 return algo.getNodeById(nodeId).id as place, cost
+
+-- #5.Yen的k最短路径算法，1971年提出"finding the k shortest loopless paths in a Network"
+match(start:Place {id:"Gouda"}), (end:Place {id:"Felixstowe"})
+-- args说明，5表示最多查找路径数为5，"distance"表示关系边的类型
+call algo.kShortestPaths.stream(start, end, 5, "distance")
+yield index, nodeIds, path, costs
+return index,
+    [node in algo.getNodesById(nodeIds[1..-1]) | node.id] as via,
+    reduce(acc=0.0, cost in costs | acc + cost) as totalCost

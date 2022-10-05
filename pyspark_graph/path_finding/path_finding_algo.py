@@ -93,19 +93,19 @@ def shortest_path(g: GraphFrame, origin, destination, spark: SparkSession,
 
 if __name__ == '__main__':
     spark: SparkSession = getSparkContext()
-    graph = create_transport_graph(spark)
+    # graph = create_transport_graph(spark)
     # 先从所有点vertex中找到人口介于10万～30万的城市，并用show()方法展示出来
-    graph.vertices.filter("population > 100000 and population < 300000") \
-        .sort("population") \
-        .show()
+    # graph.vertices.filter("population > 100000 and population < 300000") \
+    #     .sort("population") \
+    #     .show()
     # 从Den Haag到一个中型城市的最短路径，result.columns展示的是结果集中的列
-    from_expr: str = "id='Den Haag'"
-    to_expr: str = "population > 100000 and population < 300000 and id <> 'Den Haag'"
-    result = graph.bfs(from_expr, to_expr)
-    print(result.columns)
+    # from_expr: str = "id='Den Haag'"
+    # to_expr: str = "population > 100000 and population < 300000 and id <> 'Den Haag'"
+    # result = graph.bfs(from_expr, to_expr)
+    # print(result.columns)
     # 以e开头的列代表关系(边)，而以v开头的列代表节点(顶点)，我们仅对节点感兴趣
-    columns = [column for column in result.columns if not column.startswith("e")]
-    result.select(columns).show()
+    # columns = [column for column in result.columns if not column.startswith("e")]
+    # result.select(columns).show()
 
     # +----------+--------+------------------------------------------------------------------------+
     # | id | distance | path |
@@ -113,5 +113,10 @@ if __name__ == '__main__':
     # | Colchester | 347.0 | [Amsterdam, Den Haag, Hoek van Holland, Felixstowe, Ipswich, Colchester] |
     # +----------+--------+------------------------------------------------------------------------+
     # 计算两个地点间的最短路径，"Amsterdam"和"Colchester"之间的距离，并打印出距两地间的距离
-    result = shortest_path(graph, "Amsterdam", "Colchester", spark, "cost")
-    result.select("id", "distance", "path").show(truncate=False)
+    # result = shortest_path(graph, "Amsterdam", "Colchester", spark, "cost")
+    # result.select("id", "distance", "path").show(truncate=False)
+
+    # 使用shortestPaths查找所有点到target节点集合的最短路径，["Colchester", "Immingham", "Hoek van Holland"]
+    origin_graph = create_transport_graph(spark)
+    sssp_result = origin_graph.shortestPaths(["Colchester", "Immingham", "Hoek van Holland"])
+    # result.sort(["id"]).select("id", "distances").show(truncate=False)

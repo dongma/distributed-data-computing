@@ -5,7 +5,8 @@ from pyspark.sql import SparkSession, DataFrame
 from graphframes import GraphFrame
 from graphframes.lib import AggregateMessages as AM
 from pyspark.sql import functions as F
-from pyspark_graph.path_finding.import_graph import create_transport_graph, getSparkContext
+from pyspark_graph.import_graph import create_transport_graph
+from pyspark_graph.initial_spark import get_spark_context
 
 
 add_path_udf = F.udf(lambda path, id: path + [id], ArrayType(StringType()))
@@ -64,7 +65,7 @@ def shortest_path(g: GraphFrame, origin, destination, spark: SparkSession,
 
 
 if __name__ == '__main__':
-    spark: SparkSession = getSparkContext()
+    spark: SparkSession = get_spark_context()
     graph = create_transport_graph(spark)
     # 先从所有点vertex中找到人口介于10万～30万的城市，并用show()方法展示出来
     graph.vertices.filter("population > 100000 and population < 300000") \

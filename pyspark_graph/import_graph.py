@@ -25,11 +25,8 @@ def create_transport_graph(spark: SparkSession) -> GraphFrame:
     return GraphFrame(nodes, relationships)
 
 
-def getSparkContext() -> SparkSession:
-    """用于创建spark session对象"""
-    builder = SparkSession.builder.appName("pandas-on-spark")\
-        .master("local[*]")
-    builder = builder.config("spark.sql.execution.arrow.pyspark.enabled", "true")\
-        .config("spark.sql.legacy.allowUntypedScalaUDF", "true")  # bugfix in graphframe_0.8.1 version
-    # Pandas API on Spark automatically uses this Spark session with the configurations set.
-    return builder.getOrCreate()
+def create_social_graph(spark: SparkSession) -> GraphFrame:
+    """加载社交social边和点的csv，并创建GraphFrame对象"""
+    vertex = spark.read.csv("dataset/social-nodes.csv", header=True)
+    edge = spark.read.csv("dataset/social-relationships.csv", header=True)
+    return GraphFrame(vertex, edge)

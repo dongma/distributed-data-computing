@@ -3,7 +3,8 @@ from graphframes import GraphFrame
 from graphframes.lib import AggregateMessages as AM
 from pyspark.sql import functions as F, DataFrame, SparkSession
 from pyspark.sql.types import ArrayType, StringType
-from pyspark_graph.path_finding.import_graph import getSparkContext, create_transport_graph
+from pyspark_graph.import_graph import create_transport_graph
+from pyspark_graph.initial_spark import get_spark_context
 
 add_path_udf = F.udf(lambda path, id: path + [id], ArrayType(StringType()))
 
@@ -59,7 +60,7 @@ if __name__ == '__main__':
 	# | Gouda 				| 81.0 		| [Utrecht] 	|
 	# | Rotterdam 			| 85.0 		| [Den Haag] 	|
 	# | Hoek van Holland 	| 86.0 		| [Den Haag] 	|
-	spark: SparkSession = getSparkContext()
+	spark: SparkSession = get_spark_context()
 	g: GraphFrame = create_transport_graph(spark)
 	result = sssp(g, "Amsterdam", "cost")
 	result.withColumn("via", via_udf("path")).select("id", "distance", "via")\

@@ -30,3 +30,10 @@ def create_social_graph(spark: SparkSession) -> GraphFrame:
     vertex = spark.read.csv("dataset/social-nodes.csv", header=True)
     edge = spark.read.csv("dataset/social-relationships.csv", header=True)
     return GraphFrame(vertex, edge)
+
+
+def create_software_graph(spark: SparkSession):
+    """示例数据：软件依赖图，python中各个依赖库的关系"""
+    nodes = spark.read.csv("dataset/sw-nodes.csv", header=True)
+    relationships = spark.read.csv("dataset/sw-relationships.csv", header=True)
+    return GraphFrame(nodes, relationships)

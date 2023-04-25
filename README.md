@@ -13,3 +13,4 @@
 ```
 图计算平台为`apache-spark 3.0`，使用`pyspark`基于`graphframe-0.8`进行图计算。基础数据点、边表数据为`csv`文件，在代码仓库`dataset`的文件夹下，图数据导入`Neo4j`后展示如下：
 <img src="dataset/doc_reference/neo4j_transport_data.jpg" alt="neo4j_transport_data" width="90%" align=center />
+`Neo4j`中的数据集主要用来演示一些图算法，如`closeness`接近中心性算法、`betweenness`中间中心性、`pageRank`等，也支持一些社区发现算法，如：`triangleCount`三角计数、`scc`强连通分量等。     
